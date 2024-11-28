@@ -12,7 +12,7 @@ export default function TabTwoScreen() {
     });
     const [subscription, setSubscription] = useState<any>(null);
 
-    const _slow = () => DeviceMotion.setUpdateInterval(1000);
+    const _slow = () => DeviceMotion.setUpdateInterval(100);
     const _fast = () => DeviceMotion.setUpdateInterval(16);
 
     const _subscribe = async () => {
@@ -43,13 +43,13 @@ export default function TabTwoScreen() {
         <View style={styles.container}>
             <Text style={styles.text}>Device Rotation:</Text>
             <Text style={styles.text}>
-                alpha (z): {data.rotation ? data.rotation.alpha.toFixed(2) : '0.00'}°
+                alpha (z): {data.rotation ? (data.rotation.alpha * 180/Math.PI).toFixed(2)   : '0.00'}°
             </Text>
             <Text style={styles.text}>
-                beta (x): {data.rotation ? data.rotation.beta.toFixed(2) : '0.00'}°
+                beta (x): {data.rotation ? (data.rotation.beta * 180/Math.PI).toFixed(2) : '0.00'}°
             </Text>
             <Text style={styles.text}>
-                gamma (y): {data.rotation ? data.rotation.gamma.toFixed(2) : '0.00'}°
+                gamma (y): {data.rotation ? (data.rotation.gamma * 180/Math.PI).toFixed(2) : '0.00'}°
             </Text>
             <View style={styles.buttonContainer}>
                 <TouchableOpacity onPress={subscription ? _unsubscribe : _subscribe} style={styles.button}>
