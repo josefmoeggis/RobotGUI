@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, Button} from 'react-native';
+import { StyleSheet, View, Text, Button, Pressable} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import VideoStreamScreen from "@/components/VideoStreamScreen";
 import TextInputExample from "@/components/InputText";
@@ -14,10 +14,26 @@ export default function TabThreeScreen() {
                 <TextInputExample placeholderText={'port'} value={port} onChangeValue={setPort} />
             </View>
             <View style={styles.buttonRight}>
-                <Button title="DRIVE" onPress={() => {}}/>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.button,
+                        { backgroundColor: pressed ? '#1873CC' : '#2196F3' }
+                    ]}
+                    onPress={() => {}}
+                >
+                    <Text style={styles.buttonText}>DRIVE</Text>
+                </Pressable>
             </View>
             <View style={styles.buttonLeft}>
-                <Button title="REVERSE" onPress={() => {}}/>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.button,
+                        { backgroundColor: pressed ? '#811f1f' : '#d87e7e' }
+                    ]}
+                    onPress={() => {}}
+                >
+                    <Text style={styles.buttonText}>REVERSE</Text>
+                </Pressable>
             </View>
             <View style={styles.content}>
                 <Text style={styles.title}>Control Robot with Tilt</Text>
@@ -42,24 +58,41 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     buttonRight: {
+        display: 'flex',
         position: 'absolute',
-        top: '80%',
-        right: '20%',
-        height: '15%',
-        width: '20%',
+        top: '60%',
+        right: '10%',
+        height: '30%',
+        width: '40%',
+        borderRadius: '5%',
     },
     buttonLeft: {
+        display: 'flex',
         position: 'absolute',
-        top: '80%',
-        left: '20%',
-        height: '15%',
-        width: '20%',
+        top: '60%',
+        left: '10%',
+        height: '30%',
+        width: '40%',
+        borderRadius: '5%',
+    },
+    button: {
+        height: '100%',
+        backgroundColor: '#2196F3',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     content: {
         width: '50%',
         height: '60%',
         alignSelf: 'center',
         marginTop: 10,
+        margin: 10,
     },
     title: {
         fontSize: 20,
