@@ -1,10 +1,11 @@
-import { StyleSheet, View, Text, Button, Pressable} from 'react-native';
+import { StyleSheet, View, Text, Vibration, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import VideoStreamScreen from "@/components/VideoStreamScreen";
 import TextInputExample from "@/components/InputText";
 import { useState } from "react";
+import VideoStream from "@/components/VideoStreamComp";
 
 export default function TabThreeScreen() {
+    const [sliderValue, setSliderValue] = useState(30);
     const [ipAddress, setIpAddress] = useState('');
     const [port, setPort] = useState('');
     return (
@@ -20,6 +21,7 @@ export default function TabThreeScreen() {
                         { backgroundColor: pressed ? '#1873CC' : '#2196F3' }
                     ]}
                     onPress={() => {}}
+                    onPressIn={() => Vibration.vibrate(95)}
                 >
                     <Text style={styles.buttonText}>DRIVE</Text>
                 </Pressable>
@@ -31,6 +33,7 @@ export default function TabThreeScreen() {
                         { backgroundColor: pressed ? '#811f1f' : '#d87e7e' }
                     ]}
                     onPress={() => {}}
+                    onPressIn={() => Vibration.vibrate(95)}
                 >
                     <Text style={styles.buttonText}>REVERSE</Text>
                 </Pressable>
@@ -38,7 +41,7 @@ export default function TabThreeScreen() {
             <View style={styles.content}>
                 <Text style={styles.title}>Control Robot with Tilt</Text>
                 <View style={styles.videoContainer}>
-                    <VideoStreamScreen ip_address={ipAddress} port={port}/>
+                    <VideoStream ip_address={ipAddress} port={port} />
                 </View>
             </View>
         </SafeAreaView>
@@ -48,31 +51,40 @@ export default function TabThreeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#dde7ff',
     },
     inputContainer: {
         position: 'absolute',
-        top: 25,
-        left: 25,
+        top: '15%',
+        left: '5%',
         zIndex: 1,
-        gap: 10,
+    },
+    sliderContainer: {
+        position: 'absolute',
+        top: '30%',
+        width: '90%',
+        alignSelf: 'center',
+    },
+    slider: {
+        width: '100%',
+        height: 40,
     },
     buttonRight: {
         display: 'flex',
         position: 'absolute',
-        top: '60%',
-        right: '10%',
+        top: '85%',
+        right: '2%',
         height: '30%',
-        width: '40%',
+        width: '47%',
         borderRadius: '5%',
     },
     buttonLeft: {
         display: 'flex',
         position: 'absolute',
-        top: '60%',
-        left: '10%',
+        top: '85%',
+        left: '2%',
         height: '30%',
-        width: '40%',
+        width: '47%',
         borderRadius: '5%',
     },
     button: {
@@ -88,20 +100,22 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     content: {
+        position: 'absolute',
         width: '50%',
-        height: '60%',
+        height: '75%',
         alignSelf: 'center',
-        marginTop: 10,
-        margin: 10,
+        marginTop: 1,
+        borderRadius: 10,
     },
     title: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
-        marginVertical: 10,
+        marginVertical: '1%',
     },
     videoContainer: {
-        height: '80%',
+        height: '90%',
         backgroundColor: '#000',
+        borderRadius: 10,
     },
 });

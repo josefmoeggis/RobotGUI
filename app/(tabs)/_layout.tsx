@@ -9,6 +9,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as ScreenOrientation from 'expo-screen-orientation'
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -19,14 +20,25 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarPosition: 'top',
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
+            ios: {
+                position: 'absolute',
+                height: 40,
+            },
+            android: {
+                height: '15%',
+            },
         }),
+          tabBarIconStyle: {
+              height: 40,
+              marginTop: '-12%', // Reset any margin
+          },
+          tabBarLabelStyle: {
+              fontSize: 15,
+              marginTop: '-12%', // Reset any margin
+          },
       }}>
       <Tabs.Screen
         name="index"
@@ -38,15 +50,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: 'Gyroscope',
           tabBarIcon: ({ color }) => <MaterialIcons name="screen-rotation" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
           name="control_tilt"
           options={{
-              title: 'Tilt control',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+              title: 'Drive Robot',
+              tabBarIcon: ({ color }) => <MaterialCommunityIcons name="car-lifted-pickup" size={24} color={color} />,
           }}
       />
     </Tabs>
