@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
 import { View, Image, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import {tls} from "node-forge";
 
@@ -10,59 +10,62 @@ interface Props {
 type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 const VideoStream = ({ip_address, port}:Props) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageData, setImageData] = useState<string | null>(null);
     const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
     const [error, setError] = useState<string | null>(null);
+    const [isRunning, setIsRunning] = useState(true);
 
-    const connectWebSocket = useCallback(() => {
-        setConnectionState('connecting');
-        setError(null);
+    const fetchFrame = useCallback(async () => {
+        if (!isRunning) return;
 
-        const ws = new WebSocket(ip_address && port ? `ws://${ip_address}:${port}`: `ws://someurl.com:5000`);
-
-        ws.onopen = () => {
-            setConnectionState('connected');
-            setError(null);
-        };
-
-        ws.onmessage = (msg) => {
-            const blob = new Blob([msg.data], { type: 'image/jpeg' });
-            const reader = new FileReader();
-
-            reader.onload = () => {
-                const result = reader.result;
-                if (typeof result === 'string') {
-                    setImageUrl(result);
+        try {
+            const response = await fetch(
+                `http://192.168.1.79:8080/frame`,
+                {
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Accept': 'image/jpeg'
+                    }
                 }
-            };
+            );
 
-            reader.onerror = () => {
-                setError('Failed to read video frame');
-            };
+            if (!response.ok) {
+                throw new Error('Failed to fetch frame');
+            }
 
-            reader.readAsDataURL(blob);
-        };
+            // Convert response to base64
+            const arrayBuffer = await response.arrayBuffer();
+            const base64 = btoa(
+                new Uint8Array(arrayBuffer)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
 
-        ws.onerror = (err) => {
-            setError('Connection error occurred');
-            setConnectionState('error');
-        };
+            // Create the base64 image URL
+            const imageUri = `data:image/jpeg;base64,${base64}`;
+            setImageData(imageUri);
+            setConnectionState('connected');
 
-        ws.onclose = () => {
-            setConnectionState('disconnected');
-            // Attempt to reconnect after 5 seconds
-            setTimeout(connectWebSocket, 5000);
-        };
+            // Request next frame
+            requestAnimationFrame(fetchFrame);
 
-        return ws;
-    }, []);
+        } catch (err) {
+            if (err instanceof Error) {
+                console.error('Fetch error:', err.message);
+                setError(err.message);
+                setConnectionState('error');
+                setTimeout(fetchFrame, 1000);
+            }
+        }
+    }, [ip_address, port, isRunning]);
+
 
     useEffect(() => {
-        const ws = connectWebSocket();
+        fetchFrame();
         return () => {
-            ws.close();
+            setIsRunning(false);
         };
-    }, [connectWebSocket]);
+    }, [fetchFrame]);
 
     const renderContent = () => {
         switch (connectionState) {
@@ -91,9 +94,9 @@ const VideoStream = ({ip_address, port}:Props) => {
                 );
 
             case 'connected':
-                return imageUrl ? (
+                return imageData ? (
                     <Image
-                        source={{ uri: imageUrl }}
+                        source={{ uri: imageData }}
                         style={styles.videoStream}
                         resizeMode="contain"
                     />
