@@ -8,11 +8,13 @@ export default function TabThreeScreen() {
     const [sliderValue, setSliderValue] = useState(30);
     const [ipAddress, setIpAddress] = useState('');
     const [port, setPort] = useState('');
+
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.inputContainer}>
                 <TextInputExample placeholderText={'IP address'} value={ipAddress} onChangeValue={setIpAddress} />
-                <TextInputExample placeholderText={'port'} value={port} onChangeValue={setPort} />
+                <TextInputExample placeholderText={'port'} value={port} onChangeValue={(newPort) => { setPort(newPort); console.log('IP:', ipAddress, 'Port:', newPort); }} />
             </View>
             <View style={styles.buttonRight}>
                 <Pressable
@@ -34,6 +36,8 @@ export default function TabThreeScreen() {
                     ]}
                     onPress={() => {}}
                     onPressIn={() => Vibration.vibrate(95)}
+
+
                 >
                     <Text style={styles.buttonText}>REVERSE</Text>
                 </Pressable>
