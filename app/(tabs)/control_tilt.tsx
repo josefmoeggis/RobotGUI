@@ -1,13 +1,54 @@
 import { StyleSheet, View, Text, Vibration, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TextInputExample from "@/components/InputText";
-import { useState } from "react";
+import React, {useEffect, useState} from "react";
 import VideoStream from "@/components/VideoStreamComp";
+import TcpSocket from 'react-native-tcp-socket';
+import { DeviceMotion } from 'expo-sensors';
+
+interface RotationData {
+    beta: number | null;
+}
 
 export default function TabThreeScreen() {
     const [sliderValue, setSliderValue] = useState(30);
     const [ipAddress, setIpAddress] = useState('');
-    const [port, setPort] = useState('');
+    const [port, setPort] = useState('')
+    const [port_comm, setPortComm] = useState('');
+    const [button, setButton] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
+
+    const [data, setData] = useState<RotationData>({
+        beta: null
+    });
+    const [subscription, setSubscription] = useState<any>(null);
+
+    const _slow = () => DeviceMotion.setUpdateInterval(100);
+    const _fast = () => DeviceMotion.setUpdateInterval(16);
+
+    const _subscribe = async () => {
+        const { status } = await DeviceMotion.requestPermissionsAsync();
+        if (status !== 'granted') {
+            console.log('Permission to access device motion was denied');
+            return;
+        }
+        const sub = DeviceMotion.addListener(motionData => {
+            if (motionData?.rotation) {
+                setData({ beta: motionData.rotation.beta });
+            }
+        });
+        setSubscription(sub);
+    };
+
+    const _unsubscribe = () => {
+        subscription?.remove();
+        setSubscription(null);
+    };
+
+    useEffect(() => {
+        _subscribe();
+        return () => _unsubscribe();
+    }, []);
 
 
     return (
@@ -15,6 +56,9 @@ export default function TabThreeScreen() {
             <View style={styles.inputContainer}>
                 <TextInputExample placeholderText={'IP address'} value={ipAddress} onChangeValue={setIpAddress} />
                 <TextInputExample placeholderText={'port'} value={port} onChangeValue={(newPort) => { setPort(newPort); console.log('IP:', ipAddress, 'Port:', newPort); }} />
+            </View>
+            <View style={styles.inputCom}>
+                <TextInputExample placeholderText={'TCP port'} value={port_comm} onChangeValue={setPortComm} />
             </View>
             <View style={styles.buttonRight}>
                 <Pressable
@@ -36,8 +80,6 @@ export default function TabThreeScreen() {
                     ]}
                     onPress={() => {}}
                     onPressIn={() => Vibration.vibrate(95)}
-
-
                 >
                     <Text style={styles.buttonText}>REVERSE</Text>
                 </Pressable>
@@ -45,9 +87,32 @@ export default function TabThreeScreen() {
             <View style={styles.content}>
                 <Text style={styles.title}>Control Robot with Tilt</Text>
                 <View style={styles.videoContainer}>
-                    <VideoStream ip_address={ipAddress} port={port} />
+                    <VideoStream ipAddress={ipAddress} port={port} connectBtn={button} />
                 </View>
             </View>
+            <View style={styles.buttonConnectOuter}>
+                <Pressable
+                    style={({pressed}) => [
+                        styles.buttonConnect,
+                        {
+                            backgroundColor: isConnected ? '#118c05' : (pressed ? '#1873CC' : '#2196F3'),
+                            opacity: isConnected ? 0.7 : 1
+                        },
+                    ]}
+                    onPress={() => {
+                        if (!isConnected) {
+                            setButton(true);
+                            setIsConnected(true);
+                        }
+                    }}
+                    disabled={isConnected}
+                >
+                    <Text style={styles.buttonText}>
+                        {isConnected ? 'Connected' : 'Connect'}
+                    </Text>
+                </Pressable>
+            </View>
+
         </SafeAreaView>
     );
 }
@@ -62,6 +127,29 @@ const styles = StyleSheet.create({
         top: '15%',
         left: '5%',
         zIndex: 1,
+    },
+    inputCom: {
+        position: 'absolute',
+        top: '15%',
+        right: '5%',
+        zIndex: 1,
+        height: '10%',
+        width: '15%',
+    },
+    buttonConnectOuter: {
+        display: 'flex',
+        position: 'absolute',
+        height: '12%',
+        width: '12%',
+        borderRadius: '5%',
+        top: '35%',
+        right: '6.5%',
+    },
+    buttonConnect: {
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 10,
     },
     sliderContainer: {
         position: 'absolute',
