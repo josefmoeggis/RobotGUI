@@ -2,9 +2,9 @@ import { StyleSheet, View, Text, Vibration, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TextInputExample from "@/components/InputText";
 import React, {useEffect, useState} from "react";
-import VideoStream from "@/components/VideoStreamComp";
-import TcpSocket from 'react-native-tcp-socket';
 import { DeviceMotion } from 'expo-sensors';
+import {LiveStreamingView} from "@/components/StreamView";
+import {wsClient} from "@/components/WSconnection";
 
 interface RotationData {
     beta: number | null;
@@ -17,6 +17,7 @@ export default function TabThreeScreen() {
     const [port_comm, setPortComm] = useState('');
     const [button, setButton] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [speed, setSpeed] = useState(0);
 
     const [data, setData] = useState<RotationData>({
         beta: null
@@ -50,6 +51,49 @@ export default function TabThreeScreen() {
         return () => _unsubscribe();
     }, []);
 
+    // In your TabThreeScreen component:
+    useEffect(() => {
+        let mounted = true;
+
+        async function connectToServer() {
+            if (isConnected && port_comm) {
+                try {
+                    await wsClient.connect(ipAddress, port_comm);
+                    if (!mounted) return;
+                    // Optional: Add visual feedback that connection is successful
+                } catch (error) {
+                    if (!mounted) return;
+                    console.error('Failed to connect:', error);
+                    setIsConnected(false);
+                    // Optional: Add visual feedback for connection failure
+                }
+            }
+        }
+
+        connectToServer();
+
+        return () => {
+            mounted = false;
+            wsClient.disconnect();
+        };
+    }, [isConnected, ipAddress, port_comm]);
+
+    useEffect(() => {
+        if (data.beta !== null) {
+            // Only try to send if we're actually connected
+            if (wsClient.isConnected()) {
+                wsClient.sendBetaValue(data.beta);
+            }
+        }
+    }, [data.beta]);
+    useEffect(() => {
+        if (speed !== null) {
+            // Only try to send if we're actually connected
+            if (wsClient.isConnected()) {
+                wsClient.sendSpeedValue(speed);
+            }
+        }
+    }, [speed]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -66,7 +110,8 @@ export default function TabThreeScreen() {
                         styles.button,
                         { backgroundColor: pressed ? '#1873CC' : '#2196F3' }
                     ]}
-                    onPress={() => {}}
+                    onPress={() => setSpeed(100)}
+                    onResponderRelease={() => setSpeed(0)}
                     onPressIn={() => Vibration.vibrate(95)}
                 >
                     <Text style={styles.buttonText}>DRIVE</Text>
@@ -78,7 +123,8 @@ export default function TabThreeScreen() {
                         styles.button,
                         { backgroundColor: pressed ? '#811f1f' : '#d87e7e' }
                     ]}
-                    onPress={() => {}}
+                    onPress={() => setSpeed(-100)}
+                    onResponderRelease={() => setSpeed(0)}
                     onPressIn={() => Vibration.vibrate(95)}
                 >
                     <Text style={styles.buttonText}>REVERSE</Text>
@@ -87,7 +133,7 @@ export default function TabThreeScreen() {
             <View style={styles.content}>
                 <Text style={styles.title}>Control Robot with Tilt</Text>
                 <View style={styles.videoContainer}>
-                    <VideoStream ipAddress={ipAddress} port={port} connectBtn={button} />
+                    <LiveStreamingView ipAddress={ipAddress} port={port} connectBtn={button}/>
                 </View>
             </View>
             <View style={styles.buttonConnectOuter}>
