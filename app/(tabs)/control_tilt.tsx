@@ -4,7 +4,9 @@ import TextInputExample from "@/components/InputText";
 import React, {useEffect, useState} from "react";
 import { DeviceMotion } from 'expo-sensors';
 import {LiveStreamingView} from "@/components/StreamView";
+import VerticalSlider from "@/components/Sliders";
 import {wsClient} from "@/components/WSconnection";
+import slider from "@react-native-community/slider/src/Slider";
 
 interface RotationData {
     beta: number | null;
@@ -86,14 +88,15 @@ export default function TabThreeScreen() {
             }
         }
     }, [data.beta]);
+
     useEffect(() => {
-        if (speed !== null) {
-            // Only try to send if we're actually connected
-            if (wsClient.isConnected()) {
+        const intervalId = setInterval(() => {
+            if (speed !== null && wsClient.isConnected()) {
                 wsClient.sendSpeedValue(speed);
             }
-        }
-    }, [speed]);
+        }, 100);
+        return () => clearInterval(intervalId);
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -110,7 +113,7 @@ export default function TabThreeScreen() {
                         styles.button,
                         { backgroundColor: pressed ? '#1873CC' : '#2196F3' }
                     ]}
-                    onPress={() => setSpeed(100)}
+                    onPress={() => setSpeed(sliderValue)}
                     onResponderRelease={() => setSpeed(0)}
                     onPressIn={() => Vibration.vibrate(95)}
                 >
@@ -123,7 +126,7 @@ export default function TabThreeScreen() {
                         styles.button,
                         { backgroundColor: pressed ? '#811f1f' : '#d87e7e' }
                     ]}
-                    onPress={() => setSpeed(-100)}
+                    onPress={() => setSpeed(-sliderValue)}
                     onResponderRelease={() => setSpeed(0)}
                     onPressIn={() => Vibration.vibrate(95)}
                 >
@@ -158,7 +161,18 @@ export default function TabThreeScreen() {
                     </Text>
                 </Pressable>
             </View>
-
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+                <VerticalSlider
+                    value={sliderValue}
+                    onValueChange={(value) => {
+                        Vibration.vibrate(95);
+                        setSliderValue(value);
+                    }}
+                    title="Speed"
+                    min={0}
+                    max={255}
+                />
+            </View>
         </SafeAreaView>
     );
 }

@@ -1,4 +1,5 @@
-// components/WebSocketConnection.tsx
+
+
 export class WebSocketClient {
     private ws: WebSocket | null;
     private connectionReady: boolean;
