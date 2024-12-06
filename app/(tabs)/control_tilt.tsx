@@ -4,23 +4,28 @@ import TextInputExample from "@/components/InputText";
 import React, {useEffect, useState} from "react";
 import { DeviceMotion } from 'expo-sensors';
 import {LiveStreamingView} from "@/components/StreamView";
-import VerticalSlider from "@/components/Sliders";
 import {wsClient} from "@/components/WSconnection";
-import slider from "@react-native-community/slider/src/Slider";
+import {useDerivedValue, useSharedValue} from 'react-native-reanimated';
+import { Slider } from 'react-native-awesome-slider';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 interface RotationData {
     beta: number | null;
 }
 
 export default function TabThreeScreen() {
-    const [sliderValue, setSliderValue] = useState(30);
     const [ipAddress, setIpAddress] = useState('');
+    const [isDriving, setIsDriving] = useState(false)
+    const [isReversing, setIsReversing] = useState(false)
     const [port, setPort] = useState('')
     const [port_comm, setPortComm] = useState('');
     const [button, setButton] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [speed, setSpeed] = useState(0);
-
+    const progress = useSharedValue(100);
+    const min = useSharedValue(0);
+    const max = useSharedValue(255);
+    const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [data, setData] = useState<RotationData>({
         beta: null
     });
@@ -47,6 +52,50 @@ export default function TabThreeScreen() {
         subscription?.remove();
         setSubscription(null);
     };
+
+    useEffect(() => {
+        let mounted = true;
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2 seconds
+
+        async function connectToServer() {
+            if (isConnected && port_comm) {
+                try {
+                    setConnectionStatus('connecting');
+                    await wsClient.connect(ipAddress, port_comm);
+                    if (!mounted) return;
+                    setConnectionStatus('connected');
+                    retryCount = 0; // Reset retry count on successful connection
+                } catch (error) {
+                    if (!mounted) return;
+                    console.error('Failed to connect:', error);
+
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        console.log(`Retrying connection (${retryCount}/${maxRetries})...`);
+                        setTimeout(connectToServer, retryDelay);
+                    } else {
+                        setIsConnected(false);
+                        setConnectionStatus('disconnected');
+                        console.log('Max retries reached, connection failed');
+                    }
+                }
+            }
+        }
+
+        connectToServer();
+
+        return () => {
+            mounted = false;
+            wsClient.disconnect();
+        };
+    }, [isConnected, ipAddress, port_comm]);
+
+    const animatedSpeed = useDerivedValue(() => {
+        return isDriving ? progress.value :
+            isReversing ? -progress.value : 0;
+    });
 
     useEffect(() => {
         _subscribe();
@@ -81,31 +130,43 @@ export default function TabThreeScreen() {
     }, [isConnected, ipAddress, port_comm]);
 
     useEffect(() => {
-        if (data.beta !== null) {
-            // Only try to send if we're actually connected
-            if (wsClient.isConnected()) {
-                wsClient.sendBetaValue(data.beta);
-            }
+        if (data.beta !== null && connectionStatus === 'connected') {
+            const betaValue = data.beta;
+            const intervalId = setInterval(() => {
+                try {
+                    if (wsClient.isConnected()) {
+                        wsClient.sendBetaValue(betaValue * 180/Math.PI);
+                    }
+                } catch (error) {
+                    console.error('Error sending beta value:', error);
+                    setConnectionStatus('disconnected');
+                    setIsConnected(false);
+                }
+            }, 33);
+
+            return () => clearInterval(intervalId);
         }
-    }, [data.beta]);
+    }, [data.beta, connectionStatus]);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            if (speed !== null && wsClient.isConnected()) {
-                wsClient.sendSpeedValue(speed);
+            if (wsClient.isConnected()) {
+                // Use .value here since we're in an effect, not during render
+                wsClient.sendSpeedValue(animatedSpeed.value);
             }
-        }, 100);
+        }, 33);
         return () => clearInterval(intervalId);
-    }, []);
+    }, [animatedSpeed]);
 
     return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={styles.container}>
             <View style={styles.inputContainer}>
                 <TextInputExample placeholderText={'IP address'} value={ipAddress} onChangeValue={setIpAddress} />
-                <TextInputExample placeholderText={'port'} value={port} onChangeValue={(newPort) => { setPort(newPort); console.log('IP:', ipAddress, 'Port:', newPort); }} />
+                <TextInputExample placeholderText={'Cam port'} value={port} onChangeValue={(newPort) => { setPort(newPort); console.log('IP:', ipAddress, 'Port:', newPort); }} />
             </View>
             <View style={styles.inputCom}>
-                <TextInputExample placeholderText={'TCP port'} value={port_comm} onChangeValue={setPortComm} />
+                <TextInputExample placeholderText={'WS port'} value={port_comm} onChangeValue={setPortComm} />
             </View>
             <View style={styles.buttonRight}>
                 <Pressable
@@ -113,22 +174,27 @@ export default function TabThreeScreen() {
                         styles.button,
                         { backgroundColor: pressed ? '#1873CC' : '#2196F3' }
                     ]}
-                    onPress={() => setSpeed(sliderValue)}
-                    onResponderRelease={() => setSpeed(0)}
-                    onPressIn={() => Vibration.vibrate(95)}
+                    onPressIn={() => {
+                        setIsDriving(true);
+                        Vibration.vibrate(95);
+                    }}
+                    onPressOut={() => setIsDriving(false)}
                 >
                     <Text style={styles.buttonText}>DRIVE</Text>
                 </Pressable>
             </View>
+
             <View style={styles.buttonLeft}>
                 <Pressable
                     style={({ pressed }) => [
                         styles.button,
                         { backgroundColor: pressed ? '#811f1f' : '#d87e7e' }
                     ]}
-                    onPress={() => setSpeed(-sliderValue)}
-                    onResponderRelease={() => setSpeed(0)}
-                    onPressIn={() => Vibration.vibrate(95)}
+                    onPressIn={() => {
+                        setIsReversing(true);
+                        Vibration.vibrate(95);
+                    }}
+                    onPressOut={() => setIsReversing(false)}
                 >
                     <Text style={styles.buttonText}>REVERSE</Text>
                 </Pressable>
@@ -144,36 +210,52 @@ export default function TabThreeScreen() {
                     style={({pressed}) => [
                         styles.buttonConnect,
                         {
-                            backgroundColor: isConnected ? '#118c05' : (pressed ? '#1873CC' : '#2196F3'),
-                            opacity: isConnected ? 0.7 : 1
+                            backgroundColor:
+                                connectionStatus === 'connected' ? '#118c05' :
+                                    connectionStatus === 'connecting' ? '#FFA500' :
+                                        (pressed ? '#1873CC' : '#2196F3'),
+                            opacity: connectionStatus === 'connected' ? 0.7 : 1
                         },
                     ]}
                     onPress={() => {
-                        if (!isConnected) {
+                        if (connectionStatus === 'disconnected') {
                             setButton(true);
                             setIsConnected(true);
                         }
                     }}
-                    disabled={isConnected}
+                    disabled={connectionStatus !== 'disconnected'}
                 >
                     <Text style={styles.buttonText}>
-                        {isConnected ? 'Connected' : 'Connect'}
+                        {connectionStatus === 'connected' ? 'Connected' :
+                            connectionStatus === 'connecting' ? 'Connecting...' :
+                                'Connect'}
                     </Text>
                 </Pressable>
             </View>
-            <View style={{ flex: 1, flexDirection: 'row' }}>
-                <VerticalSlider
-                    value={sliderValue}
+            <View>
+                <Slider
+                    style={styles.slider}
+                    progress={progress}
+                    minimumValue={min}
+                    maximumValue={max}
                     onValueChange={(value) => {
-                        Vibration.vibrate(95);
-                        setSliderValue(value);
+                        progress.value = value;
+                        Vibration.vibrate(10);
                     }}
-                    title="Speed"
-                    min={0}
-                    max={255}
+                    theme={{
+                        disableMinTrackTintColor: '#fff',
+                        maximumTrackTintColor: '#fff',
+                        minimumTrackTintColor: '#811f1f',
+                        cacheTrackTintColor: '#333',
+                        bubbleBackgroundColor: '#666',
+                        heartbeatColor: '#999',
+                    }}
+                    sliderHeight={8}
                 />
+                <Text style={styles.speed}>Speed</Text>
             </View>
         </SafeAreaView>
+        </GestureHandlerRootView>
     );
 }
 
@@ -218,8 +300,11 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     slider: {
-        width: '100%',
-        height: 40,
+        width: '20%',
+        height: 50,
+        left: 100,
+        top: 75,
+        transform: [{ rotate: '-90deg' }]
     },
     buttonRight: {
         display: 'flex',
@@ -270,4 +355,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         borderRadius: 10,
     },
+    speed: {
+        height: 20,
+        top: 60,
+        left: 180,
+        width:60,
+        color: '#271563',
+        transform: [{rotate: '-90deg'}],
+        fontWeight: '900'
+    }
 });

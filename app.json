@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": []
+      "permissions": [],
+      "package": "com.josefmoeggis.robot_gui"
     },
     "web": {
       "bundler": "metro",

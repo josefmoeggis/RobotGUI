@@ -11,33 +11,27 @@ export default function HomeScreen() {
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
       headerImage={
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
+          source={require('@/assets/images/rover_background.jpg')}
           style={styles.reactLogo}
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Home</ThemedText>
+        <ThemedText type="title">AIS2203 Rover Project</ThemedText>
         <HelloWave />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
+            By Brage, Josia & Josef
+        </ThemedText>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Click on Gyroscope</ThemedText>
+        <ThemedText>
+          There you will be able to test the rotation data of your phone
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+        <ThemedText type="subtitle">Click on Drive Robot</ThemedText>
         <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
+          Here you can drive the robot using DRIVE, REVERSE and tilt your phone!
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
@@ -64,11 +58,12 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    reactLogo: {
+        height: '100%',
+        width: '100%',
+        bottom: 0,
+        left: 0,
+        position: 'absolute',
+        resizeMode: 'cover'
+    },
 });
