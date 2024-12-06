@@ -72,7 +72,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: 10,
         backgroundColor: '#ffffff',
-
     },
     text: {
         textAlign: 'center',
